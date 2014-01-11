@@ -66,7 +66,9 @@ public class XmlSerDe implements SerDe {
      */
     @Override
     public void initialize(Configuration configuration, final Properties properties) throws SerDeException {
-        // (1) create XML processor
+		// (1) workaround for the Hive issue with propagating the table properties to the InputFormat
+		initialize(configuration, properties, XmlInputFormat.START_TAG_KEY, XmlInputFormat.END_TAG_KEY);
+        // (2) create XML processor
         String processorClass = properties.getProperty(XML_PROCESSOR_CLASS);
         if (processorClass != null) {
             try {
@@ -82,7 +84,7 @@ public class XmlSerDe implements SerDe {
         if (this.xmlProcessor == null) {
             this.xmlProcessor = new JavaXmlProcessor();
         }
-        // (2) create XML processor context
+        // (3) create XML processor context
         List<String> columnNames = Arrays.asList(properties.getProperty(LIST_COLUMNS).split("[,:;]"));
         final List<XmlQuery> queries = new ArrayList<XmlQuery>();
         final Map<String, XmlMapEntry> mapSpecification = new HashMap<String, XmlMapEntry>();
@@ -130,7 +132,7 @@ public class XmlSerDe implements SerDe {
         if (queries.size() < columnNames.size()) {
             throw new RuntimeException("The number of XPath expressions does not much the number of columns");
         }
-        // (3) initialize the XML processor
+        // (4) initialize the XML processor
         this.xmlProcessor.initialize(new XmlProcessorContext() {
 
             @Override
@@ -148,7 +150,7 @@ public class XmlSerDe implements SerDe {
                 return properties;
             }
         });
-        // (4) create the object inspector and associate it with the XML processor
+        // (5) create the object inspector and associate it with the XML processor
         List<TypeInfo> typeInfos = TypeInfoUtils.getTypeInfosFromTypeString(properties.getProperty(LIST_COLUMN_TYPES));
         List<ObjectInspector> inspectors = new ArrayList<ObjectInspector>(columnNames.size());
         for (TypeInfo typeInfo : typeInfos) {
@@ -157,6 +159,14 @@ public class XmlSerDe implements SerDe {
         this.objectInspector = getStandardStructObjectInspector(columnNames, inspectors, this.xmlProcessor);
     }
 
+	private static void initialize(Configuration configuration, final Properties properties, String ... keys) {
+		for(String key: keys) {
+			if(configuration.get(key) == null && properties.getProperty(key) != null) {
+				configuration.set(key, properties.getProperty(key));
+			}
+		}
+	}
+	
     /**
      * @see org.apache.hadoop.hive.serde2.Deserializer#deserialize(org.apache.hadoop.io.Writable)
      */
