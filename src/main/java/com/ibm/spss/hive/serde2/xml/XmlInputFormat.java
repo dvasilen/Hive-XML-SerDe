@@ -18,7 +18,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 package com.ibm.spss.hive.serde2.xml;
 
 import java.io.DataInputStream;
@@ -72,19 +72,23 @@ public class XmlInputFormat extends TextInputFormat {
             this.startTag = conf.get(START_TAG_KEY).getBytes("utf-8");
             this.endTag = conf.get(END_TAG_KEY).getBytes("utf-8");
             FileSplit split = (FileSplit) input;
-            this.start = split.getStart();
+
             Path file = split.getPath();
             CompressionCodecFactory compressionCodecs = new CompressionCodecFactory(conf);
             CompressionCodec codec = compressionCodecs.getCodec(file);
             FileSystem fs = file.getFileSystem(conf);
             if (codec != null) {
                 this.fsin = new DataInputStream(codec.createInputStream(fs.open(file)));
+                //Data read only happens in first split and invalid other splits.
+                //This is to avoid reading duplicate data for compressed files.
+                this.start = (split.getStart() == 0) ? 0 : Long.MAX_VALUE;
                 this.end = Long.MAX_VALUE;
             } else {
+                this.start = split.getStart();
+                this.end = this.start + split.getLength();
                 FSDataInputStream fileIn = fs.open(file);
                 fileIn.seek(this.start);
                 this.fsin = fileIn;
-                this.end = this.start + split.getLength();
             }
             this.recordStartPos = this.start;
             this.pos = this.start;
