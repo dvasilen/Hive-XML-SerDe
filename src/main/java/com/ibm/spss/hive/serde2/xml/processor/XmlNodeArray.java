@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 package com.ibm.spss.hive.serde2.xml.processor;
 
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ import java.util.List;
  * Defines the array of the XML nodes
  */
 @SuppressWarnings("serial")
-public class XmlNodeArray extends ArrayList<XmlNode> {
+public class XmlNodeArray extends ArrayList<XmlNode> implements SerDeArray {
 
     private String name = null;
 

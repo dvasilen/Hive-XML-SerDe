@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 package com.ibm.spss.hive.serde2.xml.processor.java;
 
@@ -22,11 +22,13 @@ import java.util.List;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.ibm.spss.hive.serde2.xml.processor.SerDeArray;
+
 /**
  * Some DOM nodes implement Node and NodeList interfaces. We have to distinguish between the two.
  */
 @SuppressWarnings("serial")
-public class NodeArray extends ArrayList<Node> {
+public class NodeArray extends ArrayList<Node> implements SerDeArray {
 
     private String name = null;
 
