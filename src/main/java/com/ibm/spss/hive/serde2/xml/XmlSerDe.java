@@ -161,8 +161,16 @@ public class XmlSerDe implements SerDe {
 
     private static void initialize(Configuration configuration, final Properties properties, String... keys) {
         for (String key : keys) {
-            if (configuration.get(key) == null && properties.getProperty(key) != null) {
-                configuration.set(key, properties.getProperty(key));
+            String configurationValue = configuration.get(key);
+            String propertyValue = properties.getProperty(key);
+            if (configurationValue == null) {
+                if (propertyValue != null) {
+                    configuration.set(key, propertyValue);
+                }
+            } else {
+                if (propertyValue != null && !propertyValue.equals(configurationValue)) {
+                    configuration.set(key, propertyValue);
+                }
             }
         }
     }
