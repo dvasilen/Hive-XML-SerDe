@@ -135,6 +135,8 @@ public abstract class AbstractXmlProcessor implements XmlProcessor {
             }
         } else if (o instanceof XmlNode) {
             return getStringValue((XmlNode) o);
+        } else if (o != null) {
+            return o.toString();
         }
         return null;
     }

@@ -3,7 +3,7 @@
 
     <groupId>com.ibm.spss.hive.serde2.xml</groupId>
     <artifactId>hivexmlserde</artifactId>
-    <version>1.0.5.0</version>
+    <version>1.0.5.1</version>
     <packaging>jar</packaging>
 	
     <name>hive-xml-serde</name>

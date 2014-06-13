@@ -216,6 +216,8 @@ public class JavaXmlProcessor implements XmlProcessor {
             }
         } else if (o instanceof Node) {
             return getStringValue((Node) o);
+        } else if (o != null) {
+            return o.toString();
         }
         return null;
     }
@@ -453,7 +455,7 @@ public class JavaXmlProcessor implements XmlProcessor {
         }
         return map;
     }
-    
+
     /**
      * @see com.ibm.spss.hive.serde2.xml.processor.XmlProcessor#getList(java.lang.Object)
      */
