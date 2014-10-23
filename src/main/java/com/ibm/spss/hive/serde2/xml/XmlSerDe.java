@@ -88,8 +88,7 @@ public class XmlSerDe implements SerDe {
         List<String> columnNames = Arrays.asList(properties.getProperty(LIST_COLUMNS).split("[,:;]"));
         final List<XmlQuery> queries = new ArrayList<XmlQuery>();
         final Map<String, XmlMapEntry> mapSpecification = new HashMap<String, XmlMapEntry>();
-        for (Object o : properties.keySet()) {
-            String key = (String) o;
+        for (String key : properties.stringPropertyNames()) {
             if (key.startsWith(COLUMN_XPATH_PREFIX)) {
                 // create column XPath query
                 // "column.xpath.result"="//result/text()"
