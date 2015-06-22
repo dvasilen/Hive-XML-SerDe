@@ -1,94 +1,81 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
-    <groupId>com.ibm.spss.hive.serde2.xml</groupId>
-    <artifactId>hivexmlserde</artifactId>
-    <version>1.0.5.2</version>
-    <packaging>jar</packaging>
-	
-    <name>hive-xml-serde</name>
-    <url>https://github.com/dvasilen/Hive-XML-SerDe</url>
-	
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.ibm.spss.hive.serde2.xml</groupId>
+	<artifactId>hivexmlserde</artifactId>
+	<version>1.0.5.3</version>
+	<packaging>jar</packaging>
+	<name>hive-xml-serde</name>
+	<url>https://github.com/dvasilen/Hive-XML-SerDe</url>
 	<description>XML SerDe for Apache Hive</description>
-
 	<licenses>
 		<license>
-		<name>Apache License, Version 2.0, January 2004</name>
-		<url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
-		<distribution>repo</distribution>
+			<name>Apache License, Version 2.0, January 2004</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+			<distribution>repo</distribution>
 		</license>
 	</licenses>
-
 	<developers>
 		<developer>
-		<id>dvasilen</id>
-		<name>Dmitry Vasilenko</name>
-		<email>dvasilen@gmail.com</email>
+			<id>dvasilen</id>
+			<name>Dmitry Vasilenko</name>
+			<email>dvasilen@gmail.com</email>
 		</developer>
-  </developers>
-  	
-	
-     <scm>
-      <!-- Replace the connection below with your project connection -->
-      <connection>scm:git:git@github.com:dvasilen/Hive-XML-SerDe.git</connection>
-      <developerConnection>scm:git:git@github.com:dvasilen/Hive-XML-SerDe.git</developerConnection>
-      <url>scm:git:git@github.com:juven/git-demo.git</url>
-     
-      <tag>HEAD</tag>
+	</developers>
+	<scm>
+		<!-- Replace the connection below with your project connection -->
+		<connection>scm:git:git@github.com:dvasilen/Hive-XML-SerDe.git</connection>
+		<developerConnection>scm:git:git@github.com:dvasilen/Hive-XML-SerDe.git</developerConnection>
+		<url>scm:git:git@github.com:dvasilen/Hive-XML-SerDe.git</url>
+		<tag>HEAD</tag>
 	</scm>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<cdh.version>0.8.0-cdh4a1-SNAPSHOT</cdh.version>
     </properties>
-
-
-    <build>
-	 <!-- wagon-ssh-external extension is necessary for deploying with scpexe -->
-    	<extensions>
-      		<extension>
-        		<groupId>org.apache.maven.wagon</groupId>
-        		<artifactId>wagon-ssh-external</artifactId>
-        		<version>2.2</version>
-      		</extension>
-    	</extensions>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
-                </configuration>
-            </plugin>
-	    <plugin>
-        	<groupId>org.apache.maven.plugins</groupId>
-        	<artifactId>maven-release-plugin</artifactId>
-        	<version>2.4</version>
-      	    </plugin>
-              <!-- Assembly Plugin                              -->
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                    <archive>
-                        <manifest>
+	<build>
+		<!-- wagon-ssh-external extension is necessary for deploying with scpexe -->
+		<extensions>
+			<extension>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ssh-external</artifactId>
+				<version>2.2</version>
+			</extension>
+		</extensions>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-release-plugin</artifactId>
+				<version>2.4</version>
+			</plugin>
+			<!-- Assembly Plugin                              -->
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+					<archive>
+						<manifest>
                            
                         </manifest>
-                    </archive>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-			
+					</archive>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
@@ -100,8 +87,7 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>	
-			
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
@@ -113,51 +99,53 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>	
-		
-        </plugins>
-		
-    </build>
-    <repositories>
-	<repository>
-	    <id>Cloudera</id>
-	    <name>Cloudera Maven Repo</name>
-	    <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-	</repository>
-    </repositories>
-    <dependencies>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.10</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop.hive</groupId>
-            <artifactId>hive-serde</artifactId>
-            <version>0.8.0-cdh4a1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop.hive</groupId>
-            <artifactId>hive-exec</artifactId>
-            <version>0.8.0-cdh4a1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-core</artifactId>
-            <version>0.20.2</version>
-            <scope>provided</scope>
-        </dependency>
+			</plugin>
+		</plugins>
+	</build>
+	<repositories>
+		<repository>
+			<id>apache-repository</id>
+			<url>https://repository.apache.org/content/groups/public/</url>
+		</repository>
+		<repository>
+			<id>repository.cloudera.com</id>
+			<name>repository.cloudera.com-releases</name>
+			<url>https://repository.cloudera.com/artifactory/datanucleus</url>
+		</repository>
+	</repositories>
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.10</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hive</groupId>
+			<artifactId>hive-serde</artifactId>
+			<version>1.2.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hive</groupId>
+			<artifactId>hive-exec</artifactId>
+			<version>1.2.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-mapreduce-client-core</artifactId>
+			<version>2.6.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-common</artifactId>
+			<version>2.6.0</version>
+		</dependency>
 		<dependency>
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
 			<version>1.2.16</version>
-		</dependency>    
-		
-</dependencies>
+		</dependency>
+	</dependencies>
 </project>
-
-
-
