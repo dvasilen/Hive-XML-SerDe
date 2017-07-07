@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 package com.ibm.spss.hive.serde2.xml.processor.java;
 
@@ -216,6 +216,8 @@ public class JavaXmlProcessor implements XmlProcessor {
             }
         } else if (o instanceof Node) {
             return getStringValue((Node) o);
+        } else if (o != null) {
+            return o.toString();
         }
         return null;
     }
@@ -433,7 +435,7 @@ public class JavaXmlProcessor implements XmlProcessor {
     /**
      * @see com.ibm.spss.hive.serde2.xml.processor.XmlProcessor#getMap(java.lang.Object)
      */
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public Map<?, ?> getMap(Object o) {
         Map map = null;
@@ -447,6 +449,8 @@ public class JavaXmlProcessor implements XmlProcessor {
                 for (Node node : array) {
                     populateMap(map, node);
                 }
+            } else if (o instanceof Map) {
+                map.putAll((Map) o);
             }
         }
         return map;
@@ -459,7 +463,7 @@ public class JavaXmlProcessor implements XmlProcessor {
     public List<?> getList(Object o) {
         if (o == null) {
             return null;
-        } else if (o instanceof NodeArray) {
+        } else if (o instanceof List) {
             return (List<?>) o;
         }
         return null;

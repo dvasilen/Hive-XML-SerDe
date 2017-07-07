@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 package com.ibm.spss.hive.serde2.xml.objectinspector;
 
@@ -24,13 +24,16 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
 import org.apache.hadoop.hive.serde2.objectinspector.StandardStructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
+import org.apache.log4j.Logger;
 
+import com.ibm.spss.hive.serde2.xml.processor.SerDeArray;
 import com.ibm.spss.hive.serde2.xml.processor.XmlProcessor;
 
 /**
  * The struct object inspector
  */
 public class XmlStructObjectInspector extends StandardStructObjectInspector {
+    private static final Logger LOGGER = Logger.getLogger(XmlStructObjectInspector.class);
 
     private XmlProcessor xmlProcessor = null;
 
@@ -55,19 +58,26 @@ public class XmlStructObjectInspector extends StandardStructObjectInspector {
      * @see org.apache.hadoop.hive.serde2.objectinspector.StandardStructObjectInspector#getStructFieldData(java.lang.Object,
      *      org.apache.hadoop.hive.serde2.objectinspector.StructField)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Object getStructFieldData(Object data, StructField structField) {
-        ObjectInspector fieldObjectInspector = structField.getFieldObjectInspector();
-        Category category = fieldObjectInspector.getCategory();
-        Object fieldData = this.xmlProcessor.getObjectValue(data, structField.getFieldName());
-        switch (category) {
-            case PRIMITIVE: {
-                PrimitiveObjectInspector primitiveObjectInspector = (PrimitiveObjectInspector) fieldObjectInspector;
-                PrimitiveCategory primitiveCategory = primitiveObjectInspector.getPrimitiveCategory();
-                return this.xmlProcessor.getPrimitiveObjectValue(fieldData, primitiveCategory);
+        if ((data instanceof List) && !(data instanceof SerDeArray)) {
+            MyField f = (MyField) structField;
+            int fieldID = f.getFieldID();
+            return ((List<Object>) data).get(fieldID);
+        } else {
+            ObjectInspector fieldObjectInspector = structField.getFieldObjectInspector();
+            Category category = fieldObjectInspector.getCategory();
+            Object fieldData = this.xmlProcessor.getObjectValue(data, structField.getFieldName());
+            switch (category) {
+                case PRIMITIVE: {
+                    PrimitiveObjectInspector primitiveObjectInspector = (PrimitiveObjectInspector) fieldObjectInspector;
+                    PrimitiveCategory primitiveCategory = primitiveObjectInspector.getPrimitiveCategory();
+                    return this.xmlProcessor.getPrimitiveObjectValue(fieldData, primitiveCategory);
+                }
+                default:
+                    return fieldData;
             }
-            default:
-                return fieldData;
         }
     }
 
@@ -81,6 +91,5 @@ public class XmlStructObjectInspector extends StandardStructObjectInspector {
             values.add(getStructFieldData(data, structField));
         }
         return values;
-
     }
 }

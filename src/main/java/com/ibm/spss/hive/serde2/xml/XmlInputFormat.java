@@ -1,6 +1,11 @@
 /**
  * (c) Copyright IBM Corp. 2013. All rights reserved.
  *
+ * Portions of this software were originally based on the following:
+ *  Apache Mahout: http://mahout.apache.org/
+ *  Cloud9: https://github.com/lintool/Cloud9
+ *
+ *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,35 +17,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
-
-/**
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 package com.ibm.spss.hive.serde2.xml;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.Seekable;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.mapred.FileSplit;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
@@ -49,7 +42,10 @@ import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.TextInputFormat;
 
 /**
- * Reads records that are delimited by a specific begin/end tag.
+ * Reads records that are delimited by a specifc begin/end tag.
+ *
+ * @author Jimmy Lin (support for compression)
+ * @author Dmitry Vasilenko (support for Apache HCatalog/Hive)
  */
 public class XmlInputFormat extends TextInputFormat {
 
@@ -61,44 +57,62 @@ public class XmlInputFormat extends TextInputFormat {
         return new XmlRecordReader((FileSplit) inputSplit, jobConf);
     }
 
-    /**
-     * XMLRecordReader class to read through a given XML document to output XML blocks as records as specified by the start tag and end tag
-     * 
-     */
     public static class XmlRecordReader implements RecordReader<LongWritable, Text> {
-        private final byte[] startTag;
-        private final byte[] endTag;
+        private byte[] startTag;
+        private byte[] endTag;
         private final long start;
         private final long end;
-        private final FSDataInputStream fsin;
-        private final DataOutputBuffer buffer = new DataOutputBuffer();
+        private long pos;
+        private DataInputStream fsin;
+        private DataOutputBuffer buffer = new DataOutputBuffer();
+        private long recordStartPos;
 
-        public XmlRecordReader(FileSplit split, JobConf jobConf) throws IOException {
-            startTag = jobConf.get(START_TAG_KEY).getBytes("utf-8");
-            endTag = jobConf.get(END_TAG_KEY).getBytes("utf-8");
+        public XmlRecordReader(FileSplit input, JobConf jobConf) throws IOException {
+            Configuration conf = jobConf;
+            this.startTag = conf.get(START_TAG_KEY).getBytes("utf-8");
+            this.endTag = conf.get(END_TAG_KEY).getBytes("utf-8");
+            FileSplit split = (FileSplit) input;
 
-            // open the file and seek to the start of the split
-            start = split.getStart();
-            end = start + split.getLength();
             Path file = split.getPath();
-            FileSystem fs = file.getFileSystem(jobConf);
-            fsin = fs.open(split.getPath());
-            fsin.seek(start);
+            CompressionCodecFactory compressionCodecs = new CompressionCodecFactory(conf);
+            CompressionCodec codec = compressionCodecs.getCodec(file);
+            FileSystem fs = file.getFileSystem(conf);
+            if (codec != null) {
+                this.fsin = new DataInputStream(codec.createInputStream(fs.open(file)));
+                //Data read only happens in first split and invalid other splits.
+                //This is to avoid reading duplicate data for compressed files.
+                this.start = (split.getStart() == 0) ? 0 : Long.MAX_VALUE;
+                this.end = Long.MAX_VALUE;
+            } else {
+                this.start = split.getStart();
+                this.end = this.start + split.getLength();
+                FSDataInputStream fileIn = fs.open(file);
+                fileIn.seek(this.start);
+                this.fsin = fileIn;
+            }
+            this.recordStartPos = this.start;
+            this.pos = this.start;
         }
 
         @Override
         public boolean next(LongWritable key, Text value) throws IOException {
-            if (fsin.getPos() < end) {
-                if (readUntilMatch(startTag, false)) {
+            if (this.pos < this.end) {
+                if (readUntilMatch(this.startTag, false)) {
+                    this.recordStartPos = this.pos - this.startTag.length;
                     try {
-                        buffer.write(startTag);
-                        if (readUntilMatch(endTag, true)) {
-                            key.set(fsin.getPos());
-                            value.set(buffer.getData(), 0, buffer.getLength());
+                        this.buffer.write(this.startTag);
+                        if (readUntilMatch(this.endTag, true)) {
+                            key.set(this.recordStartPos);
+                            value.set(this.buffer.getData(), 0, this.buffer.getLength());
                             return true;
                         }
                     } finally {
-                        buffer.reset();
+                        if (this.fsin instanceof Seekable) {
+                            if (this.pos != ((Seekable) this.fsin).getPos()) {
+                                throw new RuntimeException("bytes consumed error!");
+                            }
+                        }
+                        this.buffer.reset();
                     }
                 }
             }
@@ -116,34 +130,27 @@ public class XmlInputFormat extends TextInputFormat {
         }
 
         @Override
-        public long getPos() throws IOException {
-            return fsin.getPos();
-        }
-
-        @Override
         public void close() throws IOException {
-            fsin.close();
+            this.fsin.close();
         }
 
         @Override
         public float getProgress() throws IOException {
-            return (fsin.getPos() - start) / (float) (end - start);
+            return ((float) (this.pos - this.start)) / ((float) (this.end - this.start));
         }
 
         private boolean readUntilMatch(byte[] match, boolean withinBlock) throws IOException {
             int i = 0;
             while (true) {
-                int b = fsin.read();
-                // end of file:
+                int b = this.fsin.read();
+                ++this.pos;
+
                 if (b == -1) {
                     return false;
                 }
-                // save to buffer:
                 if (withinBlock) {
-                    buffer.write(b);
+                    this.buffer.write(b);
                 }
-
-                // check if we're matching:
                 if (b == match[i]) {
                     i++;
                     if (i >= match.length) {
@@ -152,11 +159,15 @@ public class XmlInputFormat extends TextInputFormat {
                 } else {
                     i = 0;
                 }
-                // see if we've passed the stop point:
-                if (!withinBlock && i == 0 && fsin.getPos() >= end) {
+                if (!withinBlock && i == 0 && this.pos >= this.end) {
                     return false;
                 }
             }
+        }
+
+        @Override
+        public long getPos() throws IOException {
+            return this.pos;
         }
     }
 }

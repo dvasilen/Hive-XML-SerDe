@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 package com.ibm.spss.hive.serde2.xml;
 
@@ -56,17 +56,18 @@ public class XmlSerDe implements SerDe {
 
     private ObjectInspector objectInspector = null;
     private XmlProcessor xmlProcessor = null;
-    
+
     private static final String LIST_COLUMNS = "columns";
     private static final String LIST_COLUMN_TYPES = "columns.types";
-    
 
     /**
      * @see org.apache.hadoop.hive.serde2.Deserializer#initialize(org.apache.hadoop.conf.Configuration, java.util.Properties)
      */
     @Override
     public void initialize(Configuration configuration, final Properties properties) throws SerDeException {
-        // (1) create XML processor
+        // (1) workaround for the Hive issue with propagating the table properties to the InputFormat
+        initialize(configuration, properties, XmlInputFormat.START_TAG_KEY, XmlInputFormat.END_TAG_KEY);
+        // (2) create XML processor
         String processorClass = properties.getProperty(XML_PROCESSOR_CLASS);
         if (processorClass != null) {
             try {
@@ -75,6 +76,7 @@ public class XmlSerDe implements SerDe {
                     Thread.currentThread().getContextClassLoader() == null ? getClass().getClassLoader() : Thread.currentThread()
                         .getContextClassLoader()).newInstance();
             } catch (Throwable t) {
+                t.printStackTrace();
                 LOGGER.error("Cannot instantiate XPath processor " + processorClass);
                 LOGGER.error("Instantiating " + JavaXmlProcessor.class.getName());
             }
@@ -82,12 +84,11 @@ public class XmlSerDe implements SerDe {
         if (this.xmlProcessor == null) {
             this.xmlProcessor = new JavaXmlProcessor();
         }
-        // (2) create XML processor context
+        // (3) create XML processor context
         List<String> columnNames = Arrays.asList(properties.getProperty(LIST_COLUMNS).split("[,:;]"));
         final List<XmlQuery> queries = new ArrayList<XmlQuery>();
         final Map<String, XmlMapEntry> mapSpecification = new HashMap<String, XmlMapEntry>();
-        for (Object o : properties.keySet()) {
-            String key = (String) o;
+        for (String key : properties.stringPropertyNames()) {
             if (key.startsWith(COLUMN_XPATH_PREFIX)) {
                 // create column XPath query
                 // "column.xpath.result"="//result/text()"
@@ -130,7 +131,7 @@ public class XmlSerDe implements SerDe {
         if (queries.size() < columnNames.size()) {
             throw new RuntimeException("The number of XPath expressions does not much the number of columns");
         }
-        // (3) initialize the XML processor
+        // (4) initialize the XML processor
         this.xmlProcessor.initialize(new XmlProcessorContext() {
 
             @Override
@@ -148,13 +149,29 @@ public class XmlSerDe implements SerDe {
                 return properties;
             }
         });
-        // (4) create the object inspector and associate it with the XML processor
+        // (5) create the object inspector and associate it with the XML processor
         List<TypeInfo> typeInfos = TypeInfoUtils.getTypeInfosFromTypeString(properties.getProperty(LIST_COLUMN_TYPES));
         List<ObjectInspector> inspectors = new ArrayList<ObjectInspector>(columnNames.size());
         for (TypeInfo typeInfo : typeInfos) {
             inspectors.add(getStandardJavaObjectInspectorFromTypeInfo(typeInfo, this.xmlProcessor));
         }
         this.objectInspector = getStandardStructObjectInspector(columnNames, inspectors, this.xmlProcessor);
+    }
+
+    private static void initialize(Configuration configuration, final Properties properties, String... keys) {
+        for (String key : keys) {
+            String configurationValue = configuration.get(key);
+            String propertyValue = properties.getProperty(key);
+            if (configurationValue == null) {
+                if (propertyValue != null) {
+                    configuration.set(key, propertyValue);
+                }
+            } else {
+                if (propertyValue != null && !propertyValue.equals(configurationValue)) {
+                    configuration.set(key, propertyValue);
+                }
+            }
+        }
     }
 
     /**
